@@ -4,27 +4,28 @@ PRAGMA foreign_keys = ON;
 
 -- Metadata tables i.e. stock exchanges, data sources, asset universe
 
--- DROP TABLE exchange;
+DROP TABLE IF EXISTS exchange;
 CREATE TABLE exchange (
-    id INTEGER PRIMARY KEY,
-    abbrev TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL UNIQUE,
+    id INTEGER NOT NULL PRIMARY KEY,
+    abbrev TEXT NOT NULL,
+    name TEXT NOT NULL,
+    code TEXT UNIQUE,
     timezone TEXT NOT NULL,
     created_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- DROP TABLE data_vendor;
+DROP TABLE IF EXISTS data_vendor;
 CREATE TABLE data_vendor (
-    id INTEGER PRIMARY KEY,
+    id INTEGER NOT NULL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     created_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- DROP TABLE assets;
+DROP TABLE IF EXISTS assets;
 CREATE TABLE assets (
-    id INTEGER PRIMARY KEY,
+    id INTEGER NOT NULL PRIMARY KEY,
     exchange_id INTEGER NOT NULL,
     symbol TEXT NOT NULL,
     instrument TEXT NOT NULL,
@@ -39,9 +40,8 @@ CREATE TABLE assets (
 
 -- Price data tables i.e. EOD data, intraday data
 
--- DROP TABLE daily_price;
+DROP TABLE IF EXISTS daily_price;
 CREATE TABLE daily_price (
-    id INTEGER PRIMARY KEY,
     data_vendor_id INTEGER NOT NULL,
     asset_id INTEGER NOT NULL,
     date TEXT NOT NULL,
@@ -53,6 +53,7 @@ CREATE TABLE daily_price (
     volume INTEGER,
     created_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (date, asset_id),
     FOREIGN KEY (data_vendor_id)
         REFERENCES data_vendor (id),
     FOREIGN KEY (asset_id)
