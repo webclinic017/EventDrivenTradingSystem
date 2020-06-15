@@ -7,7 +7,7 @@ PRAGMA foreign_keys = ON;
 DROP TABLE IF EXISTS exchange;
 CREATE TABLE exchange (
     id INTEGER NOT NULL PRIMARY KEY,
-    abbrev TEXT NOT NULL,
+    abbrev TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     code TEXT UNIQUE,
     timezone TEXT NOT NULL,
@@ -33,6 +33,7 @@ CREATE TABLE assets (
     currency TEXT NOT NULL,
     created_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(exchange_id, symbol),
     FOREIGN KEY (exchange_id)
         REFERENCES exchange (id)
 );

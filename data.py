@@ -20,6 +20,8 @@ class Data():
         self.con.close()
 
     def getAssetId(self, symbol):
+        # Currently does not account for if a symbol exists in multiple exchanges
+
         """Returns the asset ID as stored in the database.
 
         :param symbol: Symbol of the asset
@@ -33,7 +35,7 @@ class Data():
             (symbol, )
             ).fetchone()
         if result == None:
-            raise ValueError("Asset '{}' does not exist in database".format(symbol))
+            raise ValueError("Asset '{}' does not exist in the database".format(symbol))
         return result[0]
 
     def getVendorId(self, name):
@@ -41,7 +43,7 @@ class Data():
 
         :param name: Name of the vendor
         :type name: str
-        :raises ValueError: If the vendor name is not foundd in the database
+        :raises ValueError: If the vendor name is not found in the database
         :return: Vendor ID
         :rtype: int
         """
@@ -50,7 +52,24 @@ class Data():
             (name, )
             ).fetchone()
         if result == None:
-            raise ValueError("Vendor '{}' does not exist in database".format(name))
+            raise ValueError("Vendor '{}' does not exist in the database".format(name))
+        return result[0]
+
+    def getExchangeId(self, abbrev):
+        """Returns the exchange ID as stored in the database.
+
+        :param name: Commonly used abbreviation of the stock exchange e.g. NYSE
+        :type name: str
+        :raises ValueError: If the exchange abbreviation is not found in the database
+        :return: Exchange ID
+        :rtype: int
+        """
+        result = self.db.execute(
+            "SELECT id FROM exchange WHERE abbrev=?",
+            (abbrev, )
+            ).fetchone()
+        if result == None:
+            raise ValueError("Exchange '{}' does not exist in the database".format(abbrev))
         return result[0]
     
     def getEodData(self, symbol, start=None, end=None, resolution="D"):
