@@ -1,13 +1,113 @@
+from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
+from event import MarketEvent
+import numpy as np
 import pandas as pd
+import pytz
 import sqlite3
 import yfinance as yf
 
-class Data():
+class DataHandler(ABC):
+    @abstractmethod
+    def getLatestBar(self, symbol):
+        """Returns the latest bar for a given symbol.
+        """
+        raise NotImplementedError("Should implement getLatestBar()")
+
+    @abstractmethod
+    def getLatestBars(self, symbol, N=1):
+        """Returns the latest N bars for a given symbol.
+        """
+        raise NotImplementedError("Should implement getLatestBars()")
+    
+    @abstractmethod
+    def getLatestBarDatetime(self, symbol):
+        """Returns a datetime object representing the timestamp of the latest bar
+        for a given symbol.
+        """
+        raise NotImplementedError("Should implement getLatestBarDatetime()")
+    
+    @abstractmethod
+    def getLatestBarValue(self, symbol, columnName):
+        """Returns one of open, high, low, close, adj_close, volume from the latest bar
+        for a given symbol.
+        """
+        raise NotImplementedError("Should implement getLatestBarValue()")
+    
+    @abstractmethod
+    def getLatestBarsValues(self, symbol, columnName, N=1):
+        """Returns the last N bar values of one of
+        open, high, low, close, adj_close, volume
+        from the latest bar for a given symbol.
+        """
+        raise NotImplementedError("Should implement getLatestBarsValues()")
+
+    @abstractmethod
+    def updateBars(self):
+        raise NotImplementedError("Should implement updateBars()")
+
+class EODDataHandler(DataHandler):
+    def __init__(self, eventQueue, universe, startDate, endDate):
+        self.eventQueue = eventQueue
+        self.universe = universe
+        self.date = startDate
+        self.continueBacktest = True
+
+        self.dataSource = DataSource()
+        self.allData = {}
+        self.latestData = {}
+
+        combinedIndex = None
+        for s in self.universe:
+            self.allData[s] = self.dataSource.getEodData(s, startDate, endDate)
+
+            # Combine the index to pad forward values
+            if combinedIndex is None:
+                combinedIndex = self.allData[s].index
+            else:
+                combinedIndex = combinedIndex.union(self.allData[s].index)
+
+            self.latestData[s] = []
+        
+        # Reindex the dataframes
+        for s in self.universe:
+            self.allData[s] = self.allData[s].reindex(index=combinedIndex, method='pad').iterrows()
+
+    def getNewSymbolBar(self, symbol):
+        for row in self.allData[symbol]:
+            yield row
+
+    def getLatestBar(self, symbol):
+        return self.latestData[symbol][-1]
+
+    def getLatestBars(self, symbol, N=1):
+        return self.latestData[symbol][-N:]
+
+    def getLatestBarDatetime(self, symbol):
+        return self.latestData[symbol][-1][0]
+
+    def getLatestBarValue(self, symbol, columnName):
+        return self.getLatestBar(symbol)[1][columnName]
+
+    def getLatestBarsValues(self, symbol, columnName, N=1):
+        return np.array([i[1][columnName] for i in self.getLatestBars(symbol, N=N)])
+
+    def updateBars(self):
+        for s in self.universe:
+            try:
+                bar = next(self.getNewSymbolBar(s))
+            except StopIteration:
+                self.continueBacktest = False
+            else:
+                if bar is not None:
+                    self.latestData[s].append(bar)
+        self.eventQueue.append(MarketEvent())
+
+class DataSource():
     def __init__(self):
-        """Creates a data source for stock data via an sqlite3 database.
-        Data will first be searched in the database file. If not found locally,
-        it will be retrieved from the financial data provider.
+        """Creates a connection to a data source for stock data via an sqlite3 database.
+        Abstracts away the process of managing the database / data vendors from
+        the actual trading system. 
         """
         self.con = sqlite3.connect("data/data.db")
         self.db = self.con.cursor()
@@ -135,6 +235,9 @@ class Data():
                 df = yf.download(s)
             else:
                 startDate = (datetime.fromisoformat(latestDate) + timedelta(days=1)).strftime("%Y-%m-%d")
+                if datetime.fromisoformat(startDate).astimezone(pytz.utc) > datetime.now().astimezone(pytz.utc):
+                    print("{} is already up to date (latest date: {})".format(s, latestDate))
+                    continue
                 df = yf.download(s, start=startDate).loc[startDate:]
                 if len(df) == 0:
                     print("{} is already up to date (latest date: {})".format(s, latestDate))
@@ -148,4 +251,4 @@ class Data():
             df.insert(loc=len(df.columns), column="asset_id", value=assetId)
             df.insert(loc=len(df.columns), column="data_vendor_id", value=vendorId)
             df.to_sql('daily_price', self.con, index_label="date", if_exists="append")
-            print("{} has been updated from {})".format(s, latestDate))
+            print("{} has been updated from {}".format(s, latestDate))
