@@ -44,6 +44,9 @@ class DataHandler(ABC):
 
     @abstractmethod
     def updateBars(self):
+        """Updates the internal state of the data handler to contain
+        the latest OHLCV bars for each symbol.  
+        """
         raise NotImplementedError("Should implement updateBars()")
 
 class EODDataHandler(DataHandler):
