@@ -7,3 +7,4 @@ class Backtest():
     def run(self):
         while len(self.eventQueue) > 0:
             event = self.eventQueue.pop()
+            
