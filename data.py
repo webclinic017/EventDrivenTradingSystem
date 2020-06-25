@@ -193,7 +193,7 @@ class DataSource():
         :rtype: pandas.DataFrame
         """
 
-        if start > end:
+        if start is not None and end is not None and start > end:
             raise ValueError("Start date is after end date")
 
         query = """ SELECT date, open, high, low, close, adj_close, volume
