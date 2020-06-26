@@ -1,4 +1,5 @@
-import numpy as np
+import pandas as pd
+from functools import reduce
 
 def CAGR(returns, periods=252):
     """Calculates the CAGR based on a time series of returns.
@@ -39,12 +40,23 @@ def sharpeRatio(returns, periods=252, rfr=0.0):
     return (CAGR(returns, periods) - rfr) / annualVolatility(returns, periods)
 
 def maxDrawdown(returns):
-    """Calculates the maximum drawdown based on a time series of returns.
+    """Calculates the maximum drawdown, proportion of time in drawdown and maximum duration of drawdown,
+    based on a time series of returns.
 
     :param returns: Percentage returns over a time period
     :type returns: pandas.Series
-    :return: Maximum drawdown amount
-    :rtype: float
+    :return: Maximum drawdown amount where 0.01 = 1%, proportion of time in drawdown, maximum duration of drawdown
+    :rtype: (float, float, int)
     """
     value = returns.add(1.0).cumprod()
-    return 1.0 - (value / value.cummax()).min()
+    ddSeries = 1.0 - (value / value.cummax())
+    dd = ddSeries.max()
+
+    ddProportion = len(ddSeries[ddSeries > 0]) / len(ddSeries)
+
+    def durReduce(res, curr):
+        currDrawdownDur = 0 if curr == 0 else res[0] + 1
+        return (currDrawdownDur, max(currDrawdownDur, res[1]))
+
+    dur = reduce(durReduce, ddSeries.values, (0, 0))
+    return (dd, ddProportion, dur[1])
