@@ -11,12 +11,24 @@ class DataHandler(ABC):
     @abstractmethod
     def getLatestBar(self, symbol):
         """Returns the latest bar for a given symbol.
+
+        :param symbol: Symbol name
+        :type symbol: str
+        :return: A tuple comprising a timestamp and a series, with the series containing latest OHLCV data
+        :rtype: tuple(pandas Timestamp, pandas Series)
         """
         raise NotImplementedError("Should implement getLatestBar()")
 
     @abstractmethod
     def getLatestBars(self, symbol, N=1):
         """Returns the latest N bars for a given symbol.
+
+        :param symbol: Symbol name
+        :type symbol: str
+        :param N: Number of bars
+        :type N: int
+        :return: A list comprising the latest N bars
+        :rtype: list of tuple(pandas Timestamp, pandas Series)
         """
         raise NotImplementedError("Should implement getLatestBars()")
     
@@ -24,6 +36,11 @@ class DataHandler(ABC):
     def getLatestBarDatetime(self, symbol):
         """Returns a datetime object representing the timestamp of the latest bar
         for a given symbol.
+
+        :param symbol: Symbol name
+        :type symbol: str
+        :return: Datetime of the latest bar
+        :rtype: pandas Timestamp
         """
         raise NotImplementedError("Should implement getLatestBarDatetime()")
     
@@ -31,6 +48,14 @@ class DataHandler(ABC):
     def getLatestBarValue(self, symbol, columnName):
         """Returns one of open, high, low, close, adj_close, volume from the latest bar
         for a given symbol.
+        
+        :param symbol: Symbol name
+        :type symbol: str
+        :param columnName: Name of the column to retrieve values from, must be one of 'open', 'high', 'low', 'close', 'adj_close', 'volume'
+        :param N: Number of bars
+        :type N: int
+        :return: Value of the column
+        :rtype: numpy.float64
         """
         raise NotImplementedError("Should implement getLatestBarValue()")
     
@@ -39,21 +64,37 @@ class DataHandler(ABC):
         """Returns the last N bar values of one of
         open, high, low, close, adj_close, volume
         from the latest bar for a given symbol.
+
+        :param symbol: Symbol name
+        :type symbol: str
+        :param columnName: Name of the column to retrieve values from, must be one of 'open', 'high', 'low', 'close', 'adj_close', 'volume'
+        :return: Value of the column
+        :rtype: numpy.ndarray
         """
         raise NotImplementedError("Should implement getLatestBarsValues()")
 
     @abstractmethod
     def updateBars(self):
         """Updates the internal state of the data handler to contain
-        the latest OHLCV bars for each symbol.  
+        the latest OHLCV bars for each symbol.
         """
         raise NotImplementedError("Should implement updateBars()")
 
 class EODDataHandler(DataHandler):
     def __init__(self, eventQueue, universe, startDate, endDate):
+        """Creates an EODDataHandler object which implements the DataHandler functions.
+
+        :param eventQueue: Reference to event queue object for updating the event queue when running the algorithm
+        :type eventQueue: collections.deque
+        :param universe: List of symbols used within the strategy
+        :type universe: list of str
+        :param startDate: Start date of the data to be used as YYYY-MM-DD
+        :type startDate: str
+        :param endDate: End date of the data to be used as YYYY-MM-DD
+        :type endDate: str
+        """
         self.eventQueue = eventQueue
         self.universe = universe
-        self.date = startDate
         self.continueBacktest = True
 
         self.dataSource = DataSource()
