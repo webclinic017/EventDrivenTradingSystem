@@ -21,7 +21,7 @@ class Portfolio():
         self.universe = self.dataHandler.universe
         self.initialCapital = initialCapital
 
-        initialPositions = dict((k, v) for k, v in [(s, [{'position': 0, 'value': 0}]) for s in self.universe])
+        initialPositions = dict((k, v) for k, v in [(s, [{'pos': 1, 'val': 0}]) for s in self.universe])
         initialPositions['cash'] = self.initialCapital
         initialPositions['total'] = self.initialCapital
 
@@ -29,9 +29,22 @@ class Portfolio():
             index=pd.DatetimeIndex(name="datetime", data=[startDate]),
             data=initialPositions
         )
+        self.currentPosition = self.positions.iloc[-1]
 
-    def updateTimeindex(self, event):
+    def updateTimeindex(self):
+        current = dict((k, v) for k, v in [(s, {'pos': 0, 'val': 0}) for s in self.universe])
         latestDatetime = self.dataHandler.getLatestBarDatetime(self.universe[0])
-        dp = dict((k, v) for k, v in [(s, 0) for s in self.symbol_list])
-        dp['datetime'] = latestDatetime
+        timestamp = pd.Timestamp(latestDatetime)
+        newPosition = pd.Series(current, name=timestamp)
+        newPosition['cash'] = self.currentPosition['cash']
+        newPosition['total'] = newPosition['cash']
+
+        for s in self.universe:
+            # Use adj_close as value
+            newPosition[s]['pos'] = self.currentPosition[s]['pos']
+            newPosition[s]['val'] = newPosition[s]['pos'] * self.dataHandler.getLatestBarValue(s, 'adj_close')
+            newPosition['total'] += newPosition[s]['val']
+
+        self.positions = self.positions.append(newPosition)
+        self.currentPosition = self.positions.iloc[-1]
 
