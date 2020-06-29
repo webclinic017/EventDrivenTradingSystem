@@ -27,14 +27,14 @@ class OrderEvent(Event):
     def __init__(self, symbol, orderType, quantity, direction):
         """Event for an order to be made by the order execution system.
 
-        :param symbol: [description]
-        :type symbol: [type]
-        :param orderType: [description]
-        :type orderType: [type]
-        :param quantity: [description]
-        :type quantity: [type]
-        :param direction: [description]
-        :type direction: [type]
+        :param symbol: Name of the symbol to order
+        :type symbol: str
+        :param orderType: Type of order, either MKT or LMT
+        :type orderType: str
+        :param quantity: Number of units of an asset
+        :type quantity: int
+        :param direction: Order direction, either BUY or SELL
+        :type direction: str
         """
         self.type = "ORDER"
         self.symbol = symbol
@@ -53,9 +53,34 @@ class OrderEvent(Event):
         )
 
 class FillEvent(Event):
-    def __init__(self):
+    def __init__(self, timestamp, symbol, exchange, quantity, direction, fillPrice, commission=None):
         """Event corresponding to the actual order being filled.
         Equivalent to the response received from a brokerage on the actual
         order details which reflects transaction costs, slippage etc.
+
+        :param timestamp: Date and time when the order was filled
+        :type timestamp: [type]
+        :param symbol: Symbol transacted
+        :type symbol: str
+        :param exchange: Name of the stock exchange transacted on
+        :type exchange: str
+        :param quantity: Number of shares filled in the ordder
+        :type quantity: int
+        :param direction: Direction of filled order, either BUY or SELL
+        :type direction: str
+        :param fillPrice: Actual price per unit of the assets transacted
+        :type fillPrice: float
+        :param commission: Commissions incurred in the transaction, defaults to max(10, 0.001 * fillCost)
+        :type commission: float, optional
         """
         self.type = "FILL"
+        self.timestamp = timestamp
+        self.symbol = symbol
+        self.exchange = exchange
+        self.quantity = quantity
+        self.direction = direction
+        self.fillPrice = fillPrice
+        self.commission = commission if commission else self.defaultCommission()
+    
+    def defaultCommission(self):
+        return max(10, 0.001 * self.fillPrice * self.quantity)
