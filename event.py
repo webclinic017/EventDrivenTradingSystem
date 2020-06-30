@@ -11,16 +11,22 @@ class MarketEvent(Event):
         self.type = "MARKET"
 
 class SignalEvent(Event):
-    def __init__(self, symbol, signalType):
+    def __init__(self, strategyId, symbol, datetime, signalType):
         """Event for a signal generated from a strategy.
 
-        :param symbol: [description]
-        :type symbol: [type]
-        :param signalType: [description]
-        :type signalType: [type]
+        :param strategyId: The ID of the strategy which generated the signal
+        :type strategyId: int
+        :param symbol: The symbol of the asset
+        :type symbol: str
+        :param datetime: The timestamp at which the signal was generated
+        :type datetime: str
+        :param signalType: LONG or SHORT
+        :type signalType: str
         """
         self.type = "SIGNAL"
+        self.strategyId = strategyId
         self.symbol = symbol
+        self.datetime = datetime
         self.signalType = signalType
 
 class OrderEvent(Event):
